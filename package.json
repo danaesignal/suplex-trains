@@ -1,0 +1,19 @@
+{
+  "name": "suplex-trains",
+  "version": "1.0.0",
+  "description": "HowToSuplexTrains.com, an FFXIV boss guide aggregator",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/davesignal/suplex-trains.git"
+  },
+  "author": "D. Williams",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/davesignal/suplex-trains/issues"
+  },
+  "homepage": "https://github.com/davesignal/suplex-trains#readme"
+}
