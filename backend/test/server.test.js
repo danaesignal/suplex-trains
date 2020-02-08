@@ -120,3 +120,124 @@ describe('Story', ()=>{
     })
   });
 });
+
+describe('User', ()=>{
+  describe('Test Endpoint', () => {
+    it('responds 200 (OK) at /user/test', async () => {
+      const response = await request(server).get('/user/test');
+      expect(response.body).to.an.instanceof(Object);
+      expect(response.status).to.equal(200);
+    })
+  });
+  describe('Get at /list', ()=> {
+    it('retrieves an array of all users, if properly authorized', async () => {
+      const response = await request(server).get('/user/list');
+      expect(response.status).to.equal(200);
+      expect(response.body).to.be.an.instanceof(Object);
+      expect(response.body).to.not.be.empty;
+      expect(response.body).to.have.lengthOf(5);
+    })
+  });
+  describe('Get at /id/:id', ()=> {
+    it('retrieves the user with the specified id', async () => {
+      let response = await request(server).get('/user/list');
+      let userOne = {... response.body[0]};
+      response = await request(server).get(`/user/id/${userOne._id}`);
+      expect(response.status).to.equal(200);
+      expect(response.body).to.be.an.instanceof(Object);
+      expect(response.body[0]._id).to.deep.equal(userOne._id);
+      expect(response.body[0].displayName).to.deep.equal(userOne.displayName);
+    })
+  });
+  describe('Post at /new', () => {
+    it('creates a new user when posted to /new', async () => {
+      let newUser = {
+        "userName": "userSix",
+        "displayName": "User Six",
+        "email": "usersix@gmail.com",
+        "password": "12345",
+        "authLevel": 2,
+        "created": new Date(),
+        "updated": new Date()
+      };
+      const response = await request(server).post('/user/new').send(newUser);
+      expect(response.status).to.equal(200);
+      expect(response.body).to.be.an.instanceof(Object);
+      expect(response.body.displayName).to.equal(newUser.displayName);
+    })
+  })
+  describe('Put at /id/:id', () => {
+    it('Updates an extant user object at the specified id where supplied password is correct', async () => {
+      let originalUser = {
+        "userName": "userSix",
+        "displayName": "User Six",
+        "email": "usersix@gmail.com",
+        "password": "12345",
+        "authLevel": 2,
+        "created": new Date(),
+        "updated": new Date()
+      };
+      originalUser = await request(server).post('/user/new').send(originalUser);
+      originalUser = originalUser.body;
+
+      originalUser = await request(server).get(`/user/id/${originalUser._id}`);
+      originalUser = originalUser.body[0];
+
+      let updatedUser = {... originalUser};
+      updatedUser.displayName = "User Sixteen";
+      updatedUser.oldPassword = "12345";
+      updatedUser = await request(server).put(`/user/id/${updatedUser._id}`).send(updatedUser);
+      updatedUser = updatedUser.body;
+
+      updatedUser = await request(server).get(`/user/id/${updatedUser._id}`);
+
+      expect(updatedUser.status).to.equal(200);
+      expect(updatedUser.body[0]).to.be.an.instanceof(Object);
+      expect(updatedUser.body[0]._id).to.equal(originalUser._id);
+      expect(updatedUser.body[0].displayName).to.not.equal(originalUser.displayName);
+    })
+    it('Rejects updates at the specified ID where provided password is incorrect', async () => {
+      let originalUser = {
+        "userName": "userSix",
+        "displayName": "User Six",
+        "email": "usersix@gmail.com",
+        "password": "12345",
+        "authLevel": 2,
+        "created": new Date(),
+        "updated": new Date()
+      };
+      originalUser = await request(server).post('/user/new').send(originalUser);
+      originalUser = originalUser.body;
+
+      originalUser = await request(server).get(`/user/id/${originalUser._id}`);
+      originalUser = originalUser.body[0];
+
+      let updatedUser = {... originalUser};
+      updatedUser.displayName = "User Sixteen";
+      updatedUser.newPassword = "54321";
+      updatedUser.oldPassword = "12346";
+
+      await request(server).put(`/user/id/${originalUser._id}`).send(updatedUser);
+      updatedUser = await request(server).get(`/user/id/${originalUser._id}`);
+
+      expect(updatedUser.status).to.equal(200);
+      expect(updatedUser.body[0]).to.be.an.instanceof(Object);
+      expect(updatedUser.body[0]._id).to.equal(originalUser._id);
+      expect(updatedUser.body[0].displayName).to.equal(originalUser.displayName);
+    })
+  })
+  describe('Delete at /id/:id', ()=> {
+    it('deletes the user with the specified id', async () => {
+      let response = await request(server).get('/user/list');
+      let userOne = {... response.body[0]};
+      response = await request(server).get(`/user/id/${userOne._id}`);
+      expect(response.status).to.equal(200);
+      expect(response.body).to.be.an.instanceof(Object);
+      expect(response.body[0]._id).to.deep.equal(userOne._id);
+
+      response = await request(server).delete(`/user/id/${userOne._id}`);
+      response = await request(server).get(`/user/id/${userOne._id}`);
+      expect(response.body).to.be.an('array').that.is.empty;
+    })
+  });
+});

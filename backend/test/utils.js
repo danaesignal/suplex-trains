@@ -1,7 +1,9 @@
 import Dotenv from 'dotenv';
 import Mongoose from 'mongoose';
 import Story from '../src/story/story.model';
-import fixtures from './fixtures/story.fixture';
+import User from '../src/user/user.model';
+import StoryFixtures from './fixtures/story.fixture';
+import UserFixtures from './fixtures/user.fixture';
 import path from 'path';
 
 Dotenv.config({ path: path.resolve(__dirname, `../config/${process.env.ENVIRONMENT}.env`)});
@@ -13,7 +15,10 @@ let db = Mongoose.connection;
 db.on('error', console.error.bind(console, 'MongoDB connection error:'));
 
 beforeEach(function (done) {
-  Story.collection.insert(fixtures, err => {
+  Story.collection.insert(StoryFixtures, err => {
+    if (err) console.log(err);
+  });
+  User.collection.insert(UserFixtures, err => {
     if (err) console.log(err);
   });
   // console.log('here');

@@ -2,6 +2,7 @@ import Express from 'express';
 import Dotenv from 'dotenv';
 import Mongoose from 'mongoose';
 import Story from './story/story.route';
+import User from './user/user.route';
 import S3 from './s3/s3.route';
 import path from 'path';
 
@@ -21,6 +22,9 @@ app.use(Express.urlencoded({extended: false}));
 
 // Router for API access to story
 app.use('/story', Story);
+
+// Router for API access to user
+app.use('/user', User);
 
 // Router for API access to s3 controller
 app.use("/sign_s3", S3);
