@@ -55,6 +55,7 @@ describe('Story', ()=>{
   })
   describe('Post at /new', () => {
     it('creates a new story document when posted to /new', async () => {
+      let loggedInUser = await request(server).post('/user/login').send({userName: "userone", password:"12345"});
       let newStory = {
         "displayName": "Six",
         "videoIds": ["6789", "9876"],
@@ -66,7 +67,7 @@ describe('Story', ()=>{
         "created": new Date(),
         "updated": new Date()
       };
-      const response = await request(server).post('/story/new').send(newStory);
+      const response = await request(server).post('/story/new').set('Authorization', loggedInUser.body.token).send(newStory);
       expect(response.status).to.equal(200);
       expect(response.body).to.be.an.instanceof(Object);
       expect(response.body.displayName).to.equal(newStory.displayName);
@@ -74,18 +75,19 @@ describe('Story', ()=>{
   })
   describe('Put at /id/:id', () => {
     it('Updates an extant story object at the specified id', async () => {
+      let loggedInUser = await request(server).post('/user/login').send({userName: "userone", password:"12345"});
       let originalStory = {
         "displayName": "Six",
         "videoIds": ["6789", "9876"],
         "videoLabels": ["MTQ", "WTG"],
         "notes": ["NoteOne","NoteTwo"],
-        "owner": "3",
+        "owner": `${loggedInUser.body.user._id}`,
         "itemLevel": "230",
         "imageName": "67890.jpg",
         "created": new Date(),
         "updated": new Date()
       };
-      originalStory = await request(server).post('/story/new').send(originalStory);
+      originalStory = await request(server).post('/story/new').set('Authorization', loggedInUser.body.token).send(originalStory);
       originalStory = originalStory.body;
 
       originalStory = await request(server).get(`/story/id/${originalStory._id}`);
@@ -93,7 +95,7 @@ describe('Story', ()=>{
 
       let updatedStory = {... originalStory};
       updatedStory.displayName = "Seven";
-      updatedStory = await request(server).put(`/story/id/${updatedStory._id}`).send(updatedStory);
+      updatedStory = await request(server).put(`/story/id/${updatedStory._id}`).set('Authorization', loggedInUser.body.token).send(updatedStory);
       updatedStory = updatedStory.body;
 
       updatedStory = await request(server).get(`/story/id/${updatedStory._id}`);
@@ -107,6 +109,8 @@ describe('Story', ()=>{
   })
   describe('Delete at /id/:id', ()=> {
     it('deletes the story with the specified id', async () => {
+      let loggedInUser = await request(server).post('/user/login').send({userName: "userfive", password:"12345"});
+
       let response = await request(server).get('/story');
       let storyOne = {... response.body[0]};
       response = await request(server).get(`/story/id/${storyOne._id}`);
@@ -114,7 +118,7 @@ describe('Story', ()=>{
       expect(response.body).to.be.an.instanceof(Object);
       expect(response.body[0]).to.deep.equal(storyOne);
 
-      response = await request(server).delete(`/story/id/${storyOne._id}`);
+      response = await request(server).delete(`/story/id/${storyOne._id}`).set('Authorization', loggedInUser.body.token);
       response = await request(server).get(`/story/id/${storyOne._id}`);
       expect(response.body).to.be.an('array').that.is.empty;
     })
@@ -145,8 +149,8 @@ describe('User', ()=>{
       response = await request(server).get(`/user/id/${userOne._id}`);
       expect(response.status).to.equal(200);
       expect(response.body).to.be.an.instanceof(Object);
-      expect(response.body[0]._id).to.deep.equal(userOne._id);
-      expect(response.body[0].displayName).to.deep.equal(userOne.displayName);
+      expect(response.body._id).to.deep.equal(userOne._id);
+      expect(response.body.displayName).to.deep.equal(userOne.displayName);
     })
   });
   describe('Post at /new', () => {
@@ -156,14 +160,12 @@ describe('User', ()=>{
         "displayName": "User Six",
         "email": "usersix@gmail.com",
         "password": "12345",
-        "authLevel": 2,
-        "created": new Date(),
-        "updated": new Date()
+        "authLevel": 2
       };
       const response = await request(server).post('/user/new').send(newUser);
       expect(response.status).to.equal(200);
-      expect(response.body).to.be.an.instanceof(Object);
-      expect(response.body.displayName).to.equal(newUser.displayName);
+      expect(response.body.user).to.be.an.instanceof(Object);
+      expect(response.body.user.displayName).to.equal(newUser.displayName);
     })
   })
   describe('Put at /id/:id', () => {
@@ -173,28 +175,23 @@ describe('User', ()=>{
         "displayName": "User Six",
         "email": "usersix@gmail.com",
         "password": "12345",
-        "authLevel": 2,
-        "created": new Date(),
-        "updated": new Date()
+        "authLevel": 3
       };
       originalUser = await request(server).post('/user/new').send(originalUser);
-      originalUser = originalUser.body;
+      let token = originalUser.body.token;
+      originalUser = originalUser.body.user;
 
-      originalUser = await request(server).get(`/user/id/${originalUser._id}`);
-      originalUser = originalUser.body[0];
-
-      let updatedUser = {... originalUser};
-      updatedUser.displayName = "User Sixteen";
-      updatedUser.oldPassword = "12345";
-      updatedUser = await request(server).put(`/user/id/${updatedUser._id}`).send(updatedUser);
-      updatedUser = updatedUser.body;
-
-      updatedUser = await request(server).get(`/user/id/${updatedUser._id}`);
+      let updatedUser = {
+        displayName: "User Sixteen",
+        password: "12345"
+      };
+      updatedUser = await request(server).put(`/user/id/${originalUser._id}`).set('Authorization', token).send(updatedUser);
+      updatedUser = await request(server).get(`/user/id/${originalUser._id}`);
 
       expect(updatedUser.status).to.equal(200);
-      expect(updatedUser.body[0]).to.be.an.instanceof(Object);
-      expect(updatedUser.body[0]._id).to.equal(originalUser._id);
-      expect(updatedUser.body[0].displayName).to.not.equal(originalUser.displayName);
+      expect(updatedUser.body).to.be.an.instanceof(Object);
+      expect(updatedUser.body._id).to.equal(originalUser._id);
+      expect(updatedUser.body.displayName).to.not.equal(originalUser.displayName);
     })
     it('Rejects updates at the specified ID where provided password is incorrect', async () => {
       let originalUser = {
@@ -202,15 +199,13 @@ describe('User', ()=>{
         "displayName": "User Six",
         "email": "usersix@gmail.com",
         "password": "12345",
-        "authLevel": 2,
-        "created": new Date(),
-        "updated": new Date()
+        "authLevel": 2
       };
       originalUser = await request(server).post('/user/new').send(originalUser);
-      originalUser = originalUser.body;
+      originalUser = originalUser.body.user;
 
       originalUser = await request(server).get(`/user/id/${originalUser._id}`);
-      originalUser = originalUser.body[0];
+      originalUser = originalUser.body;
 
       let updatedUser = {... originalUser};
       updatedUser.displayName = "User Sixteen";
@@ -221,23 +216,26 @@ describe('User', ()=>{
       updatedUser = await request(server).get(`/user/id/${originalUser._id}`);
 
       expect(updatedUser.status).to.equal(200);
-      expect(updatedUser.body[0]).to.be.an.instanceof(Object);
-      expect(updatedUser.body[0]._id).to.equal(originalUser._id);
-      expect(updatedUser.body[0].displayName).to.equal(originalUser.displayName);
+      expect(updatedUser.body).to.be.an.instanceof(Object);
+      expect(updatedUser.body._id).to.equal(originalUser._id);
+      expect(updatedUser.body.displayName).to.equal(originalUser.displayName);
     })
   })
   describe('Delete at /id/:id', ()=> {
     it('deletes the user with the specified id', async () => {
+      let loggedInUser = await request(server).post('/user/login').send({userName: "userone", password:"12345"});
+
       let response = await request(server).get('/user/list');
       let userOne = {... response.body[0]};
       response = await request(server).get(`/user/id/${userOne._id}`);
+
       expect(response.status).to.equal(200);
       expect(response.body).to.be.an.instanceof(Object);
-      expect(response.body[0]._id).to.deep.equal(userOne._id);
+      expect(response.body._id).to.deep.equal(userOne._id);
 
-      response = await request(server).delete(`/user/id/${userOne._id}`);
+      response = await request(server).delete(`/user/id/${userOne._id}`).set('Authorization', loggedInUser.body.token);
       response = await request(server).get(`/user/id/${userOne._id}`);
-      expect(response.body).to.be.an('array').that.is.empty;
+      expect(response.body).to.be.an('object').that.is.empty;
     })
   });
 });

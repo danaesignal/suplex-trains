@@ -4,6 +4,7 @@ import Mongoose from 'mongoose';
 import Story from './story/story.route';
 import User from './user/user.route';
 import S3 from './s3/s3.route';
+import JWTMiddleware from './middleware/middleware.jwt.js';
 import path from 'path';
 
 Dotenv.config({ path: path.resolve(__dirname, `../config/${process.env.ENVIRONMENT}.env`)});
@@ -19,6 +20,9 @@ db.on('error', console.error.bind(console, 'MongoDB connection error:'));
 
 app.use(Express.json());
 app.use(Express.urlencoded({extended: false}));
+
+// Json Web Token middleware for authorization
+app.use(JWTMiddleware.checkAuthorization);
 
 // Router for API access to story
 app.use('/story', Story);

@@ -48,19 +48,38 @@ StoryController.createNewStory = (req, res, next) => {
 }
 
 StoryController.updateStoryById = async (req, res, next) => {
+  // This action requires a user to be logged in.
+  if(!req.userFromToken){
+    return res.status(401).json({message: "Unauthorized"});
+  }
   let updatedStory = new Story({... req.body});
-  updatedStory.isNew = false;
-  updatedStory.save(function(err){
-    if (err) return next(err);
-  });
-  res.send(updatedStory);
+  // Users can only edit their own stories. Admins can edit any stories.
+  if(req.userFromToken._id === updatedStory.owner || req.userFromToken.authLevel === 3){
+    updatedStory.isNew = false;
+    updatedStory.save(function(err){
+      if (err) return next(err);
+    });
+    res.send(updatedStory);
+  } else {
+    return res.status(401).json({message: "Unauthorized"});
+  }
 }
 
 StoryController.deleteStoryById = async (req, res, next) => {
-  Story.deleteOne({ _id: req.params.id}, function(err){
-    if (err) return next(err);
-  });
-  res.send({});
+  // This action requires a user to be logged in.
+  if(!req.userFromToken){
+    return res.status(401).json({message: "Unauthorized"});
+  }
+  let updatedStory = new Story({... req.body});
+  // Users can only delete their own stories. Admins can delete any stories.
+  if(req.userFromToken._id === updatedStory.owner || req.userFromToken.authLevel === 3){
+    Story.deleteOne({ _id: req.params.id}, function(err){
+      if (err) return next(err);
+    });
+    res.send({});
+  } else {
+    return res.status(401).json({message: "Unauthorized"});
+  }
 }
 
 export default StoryController;

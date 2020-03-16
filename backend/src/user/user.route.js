@@ -8,5 +8,7 @@ router.put('/id/:id', userController.updateUser);
 router.delete('/id/:id', userController.deleteUser);
 router.get('/list', userController.getUserList);
 router.post('/new', userController.createNewUser);
+router.post('/login', userController.logIn);
+router.get('/reauth', userController.reauthenticate);
 
 export default router;

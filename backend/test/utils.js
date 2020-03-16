@@ -15,13 +15,15 @@ let db = Mongoose.connection;
 db.on('error', console.error.bind(console, 'MongoDB connection error:'));
 
 beforeEach(function (done) {
+  for (var i in db.collections) {
+       db.collections[i].remove(function() {});
+  }
   Story.collection.insert(StoryFixtures, err => {
     if (err) console.log(err);
   });
   User.collection.insert(UserFixtures, err => {
     if (err) console.log(err);
   });
-  // console.log('here');
   return done();
 });
 
